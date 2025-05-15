@@ -3,17 +3,18 @@ import logging
 from deep_translator import GoogleTranslator
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+from telegram.error import InvalidToken
 
-# Logni sozlash
+# Configure logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Funksiyalar
+# Functions
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Botni ishga tushirish komandasi"""
+    """Start the bot"""
     user = update.effective_user
     keyboard = [
         [
@@ -30,7 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Tugmalar bosilganda ishlaydigan funksiya"""
+    """Handle button clicks"""
     query = update.callback_query
     await query.answer()
     
@@ -45,7 +46,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(text=message)
 
 async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Yuborilgan matnni tarjima qilish"""
+    """Translate the sent text"""
     if 'direction' not in context.user_data:
         keyboard = [
             [
@@ -78,7 +79,7 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Yordam xabarini ko'rsatish"""
+    """Show help message"""
     help_text = (
         "📝 *O'zbekcha-Ruscha tarjimon bot haqida*\n\n"
         "Botdan foydalanish uchun qo'llanma:\n"
@@ -91,29 +92,42 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_markdown(help_text)
 
 def main():
-    """Botni ishga tushirish"""
-    # TOKEN ni o'qish
+    """Run the bot"""
+    # Read the token from environment variable
     token = os.getenv("TELEGRAM_TOKEN")
     
-    # TOKEN mavjud emasligini tekshirish
-    if not token:
-        print("XATOLIK: TELEGRAM_TOKEN muhit o'zgaruvchisi topilmadi!")
-        print("Iltimos, .env faylini to'ldiring yoki muhit o'zgaruvchisini sozlang.")
-        print("Misol: export TELEGRAM_TOKEN=your_token_here")
+    # Check if token is valid
+    if not token or token.strip() == "":
+        print("XATOLIK: TELEGRAM_TOKEN muhit o'zgaruvchisi topilmadi yoki bo'sh!")
+        print("1. Telegram BotFather orqali bot yarating va token oling.")
+        print("2. Tokenni .env fayliga qo'shing yoki muhit o'zgaruvchisi sifatida sozlang.")
+        print("Misol: export TELEGRAM_TOKEN=your_bot_token_here")
+        print("3. Agar Docker ishlatayotgan bo'lsangiz, docker-compose.yml yoki .env faylida tokenni sozlang.")
         return
     
-    # Applicationni sozlash
-    application = Application.builder().token(token).build()
+    # Initialize the application
+    try:
+        application = Application.builder().token(token).build()
+    except InvalidToken as e:
+        print(f"XATOLIK: Yaroqsiz token! {e}")
+        print("Iltimos, BotFather dan olingan to'g'ri tokenni ishlatganingizga ishonch hosil qiling.")
+        return
+    except Exception as e:
+        print(f"XATOLIK: Botni ishga tushirishda xato yuz berdi: {e}")
+        return
     
-    # Handler qo'shish
+    # Add handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, translate_text))
     
-    # Botni ishga tushirish
+    # Start the bot
     print("Bot ishga tushdi...")
-    application.run_polling()
+    try:
+        application.run_polling()
+    except Exception as e:
+        print(f"XATOLIK: Bot polling jarayonida xato yuz berdi: {e}")
 
 if __name__ == '__main__':
     main()
