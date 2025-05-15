@@ -1,6 +1,6 @@
 import os
 import logging
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
@@ -10,9 +10,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-# Tarjimon klassi
-translator = Translator()
 
 # Funksiyalar
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -68,12 +65,12 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         if direction == 'uz-ru':
-            src, dest = 'uz', 'ru'
+            translator = GoogleTranslator(source='uz', target='ru')
         else:
-            src, dest = 'ru', 'uz'
+            translator = GoogleTranslator(source='ru', target='uz')
         
-        translated = translator.translate(text, src=src, dest=dest)
-        await update.message.reply_text(f"🔄 Tarjima:\n\n{translated.text}")
+        translated_text = translator.translate(text)
+        await update.message.reply_text(f"🔄 Tarjima:\n\n{translated_text}")
     except Exception as e:
         logger.error(f"Tarjima xatosi: {e}")
         await update.message.reply_text(
