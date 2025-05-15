@@ -95,6 +95,13 @@ def main():
     # TOKEN ni o'qish
     token = os.getenv("TELEGRAM_TOKEN")
     
+    # TOKEN mavjud emasligini tekshirish
+    if not token:
+        print("XATOLIK: TELEGRAM_TOKEN muhit o'zgaruvchisi topilmadi!")
+        print("Iltimos, .env faylini to'ldiring yoki muhit o'zgaruvchisini sozlang.")
+        print("Misol: export TELEGRAM_TOKEN=your_token_here")
+        return
+    
     # Applicationni sozlash
     application = Application.builder().token(token).build()
     
@@ -105,6 +112,7 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, translate_text))
     
     # Botni ishga tushirish
+    print("Bot ishga tushdi...")
     application.run_polling()
 
 if __name__ == '__main__':
